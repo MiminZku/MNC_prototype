@@ -87,8 +87,6 @@ public class Player : MonoBehaviourPun
                 transform.Translate(new Vector3(1, 0, 0));
             }
         }
-
-
     }
 
     public void ReadyToMove()
