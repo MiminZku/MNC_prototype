@@ -27,6 +27,7 @@ public class NewGameMgr : MonoBehaviourPunCallbacks
     NewPlayer myPlayer;
     public Transform[] spawnPositions;
     public GameObject playerPrefab;
+    private bool isProgressing = false;
 
     // Start is called before the first frame update
     void Start()
@@ -46,9 +47,7 @@ public class NewGameMgr : MonoBehaviourPunCallbacks
     // Update is called once per frame
     void Update()
     {
-
         GameProcess();
-
     }
 
     private void GameProcess()
@@ -60,6 +59,8 @@ public class NewGameMgr : MonoBehaviourPunCallbacks
                 state = BattleState.Input;
                 break;
             case BattleState.Input:
+                if (isProgressing) break;
+                isProgressing = true;
                 // 주사위 굴리기
                 dice.RollDice();
                 // 주사위 눈 수 UI에 표시
@@ -84,6 +85,7 @@ public class NewGameMgr : MonoBehaviourPunCallbacks
                 if (EveryPlayerReady())
                 {
                     state = BattleState.SetObstacle;
+                    isProgressing = false;
                 }
 
                 break;
@@ -106,8 +108,8 @@ public class NewGameMgr : MonoBehaviourPunCallbacks
         foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
         {
             Hashtable cp = player.CustomProperties;
-            Debug.Log(cp["isMoveReady"]);
-            if (!(bool)cp["isMoveReady"]) return false;
+            Debug.Log(cp["isMoveDone"]);
+            if (!(bool)cp["isMoveDone"]) return false;
         }
         return true;
     }
