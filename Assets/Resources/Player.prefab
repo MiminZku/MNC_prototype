@@ -99,10 +99,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12d62d906d381a3418a5dd017ceeb734, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  curIndex: 0000000000000000
+  orgIndex: 0000000000000000
   player1Mat: {fileID: 2100000, guid: d1ef89656f44161498bea11aad55e35a, type: 2}
   player2Mat: {fileID: 2100000, guid: 7896587f76d11464aa65aefd7bd754b5, type: 2}
   move: 000000000000000000000000000000000000000000000000
   isMoveReady: 0
+  isMoving: 0
 --- !u!114 &-7145582522861395318
 MonoBehaviour:
   m_ObjectHideFlags: 0

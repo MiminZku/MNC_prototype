@@ -40,37 +40,33 @@ public class GameManager : MonoBehaviourPunCallbacks
     public Transform[] spawnPositions;
     public GameObject playerPrefab;
     public bool isPlayersMoving;
-
+    Player localPlayer;
 
     // Start is called before the first frame updates
     void Start()
     {
         //// 부모 오브젝트 tiles를 통해서 tile을 가져와서 board에 넣어주기
-        //board = new Tile[boardRow, boardCol];
-        //for(int i = 0; i < boardRow; i++)
-        //{
-        //    for(int j = 0; j < boardCol; j++)
-        //    {
-        //        Transform child = tiles.transform.GetChild(i*boardCol + j);
-        //        board[i, j] = child.GetComponent<Tile>();
-        //    }
-        //}
-        // check
-        // for(int i = 0; i < boardRow; i++)
-        // {
-        //     for(int j = 0; j < boardCol; j++)
-        //     {
-        //         Debug.Log("오브젝트 " + (i*boardCol + j));
-        //         Debug.Log(board[i,j].transform.position);
-        //     }
-        // }
+        board = new Tile[boardRow, boardCol];
+        for (int i = 0; i < boardRow; i++)
+        {
+            for (int j = 0; j < boardCol; j++)
+            {
+                Transform child = tiles.transform.GetChild(i * boardCol + j);
+                board[i, j] = child.GetComponent<Tile>();
+                //Debug.Log("오브젝트 " + (i*boardCol + j));
+                //Debug.Log(board[i, j].transform.position);
+            }
+        }
         SpawnPlayer();
     }
     private void SpawnPlayer()
     {
         var localPlayerIndex = PhotonNetwork.LocalPlayer.ActorNumber - 1;
-        var spawnPosition = spawnPositions[localPlayerIndex % spawnPositions.Length];
-        PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition.position, spawnPosition.rotation);
+        int spawnPos = localPlayerIndex % spawnPositions.Length;
+        var spawnPosition = spawnPositions[spawnPos];
+        GameObject localObject = PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition.position, spawnPosition.rotation);
+        localPlayer = localObject.GetComponent<Player>();
+        localPlayer.SetIndex(spawnPos);
     }
 
     // Update is called once per frame
@@ -80,15 +76,13 @@ public class GameManager : MonoBehaviourPunCallbacks
         foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
         {
             Hashtable cp = player.CustomProperties;
-            Debug.Log(cp["isMoveReady"]);
             if (!(bool)cp["isMoveReady"]) return;
         }
-        if (isPlayersMoving) return;
-        isPlayersMoving = true;
-        foreach (GameObject player in GameObject.FindGameObjectsWithTag("Player"))
+        foreach(GameObject playerObject in GameObject.FindGameObjectsWithTag("Player"))
         {
-            player.GetComponent<Player>().MoveBoth();
+            if (playerObject.GetComponent<Player>().isMoving) return;
         }
+        localPlayer.MoveBoth();
     }
 
     public override void OnLeftRoom() // 방 나가질 때 자동 실행(내가 나갈 경우에만)
