@@ -19,7 +19,6 @@ public class Player : MonoBehaviourPun
     [SerializeField] int[] curIndex = new int[2];
     [SerializeField] int[] orgIndex = new int[2];
 
-
     private MeshRenderer meshRenderer;
     Vector3 currentPosition;
     public Material player1Mat;
@@ -32,7 +31,7 @@ public class Player : MonoBehaviourPun
         Down,
         Right
     }
-    public Move[] move;
+    public Move[] moves;
     public bool isMoveReady;
     int moveCount = 0;
     public bool isMoving;
@@ -51,7 +50,16 @@ public class Player : MonoBehaviourPun
         {
             meshRenderer.material = player2Mat;
         }
-        move = new Move[2];
+        moves = new Move[2];
+
+        if(currentPosition.z == 1.5)
+        {
+            SetIndex(0);
+        }
+        else if(currentPosition.z == 4.5)
+        {
+            SetIndex(1);
+        }
     }
 
     // Update is called once per frame
@@ -59,7 +67,7 @@ public class Player : MonoBehaviourPun
     {
         if (!photonView.IsMine) { return; }
         if (isMoving) { return; }
-        if (moveCount == move.Length)
+        if (moveCount == moves.Length)
         {
             if(Input.GetKeyDown(KeyCode.Return))    // 엔터키
             {
@@ -72,30 +80,51 @@ public class Player : MonoBehaviourPun
             {
                 if (curIndex[0] == 0) { return; }
                 curIndex[0] -= 1;
-                move[moveCount++] = Move.Up;
+                photonView.RPC("InputMoveRPC", RpcTarget.All, 1);
                 transform.Translate(new Vector3(0, 0, 1));
             }
             else if (Input.GetKeyDown(KeyCode.A))
             {
                 if (curIndex[1] == 0) { return; }
                 curIndex[1] -= 1;
-                move[moveCount++] = Move.Left;
+                photonView.RPC("InputMoveRPC", RpcTarget.All, 2);
                 transform.Translate(new Vector3(-1, 0, 0));
             }
             else if (Input.GetKeyDown(KeyCode.S))
             {
                 if (curIndex[0] == 5) { return; }
                 curIndex[0] += 1;
-                move[moveCount++] = Move.Down;
+                photonView.RPC("InputMoveRPC", RpcTarget.All, 3);
                 transform.Translate(new Vector3(0, 0, -1));
             }
             else if (Input.GetKeyDown(KeyCode.D))
             {
                 if (curIndex[1] == 2) { return; }
                 curIndex[1] += 1;
-                move[moveCount++] = Move.Right;
+                photonView.RPC("InputMoveRPC", RpcTarget.All, 4);
                 transform.Translate(new Vector3(1, 0, 0));
             }
+        }
+    }
+
+    [PunRPC]
+    public void InputMoveRPC(int move)
+    {
+        if(move == 1)
+        {
+            moves[moveCount++] = Move.Up;
+        }
+        if (move == 2)
+        {
+            moves[moveCount++] = Move.Left;
+        }
+        if (move == 3)
+        {
+            moves[moveCount++] = Move.Down;
+        }
+        if (move == 4)
+        {
+            moves[moveCount++] = Move.Right;
         }
     }
 
@@ -117,61 +146,61 @@ public class Player : MonoBehaviourPun
     public void MoveBothRPC()
     {
         isMoving = true;
-        GetComponent<PhotonTransformView>().m_SynchronizePosition = true;
+        //GetComponent<PhotonTransformView>().m_SynchronizePosition = true;
         StartCoroutine("MoveDelay");
     }
 
     IEnumerator MoveDelay()
     {
-        if (!photonView.IsMine)
-        {
-            yield break;
-        }
+        //if (!photonView.IsMine)
+        //{
+        //    yield break;
+        //}
         isMoveReady = false;
         PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable { { "isMoveReady", false } });
-        for (int i = 0; i < move.Length; i++)
+        for (int i = 0; i < moves.Length; i++)
         {
-            if (move[i] == Move.None) { continue; }
-            switch (move[i])
+            if (moves[i] == Move.None) { continue; }
+            switch (moves[i])
             {
                 case Move.Up:
                     transform.Translate(new Vector3(0, 0, 1));
                     curIndex[0] -= 1;
-                    GameManager.Instance.board[curIndex[0], curIndex[1]].Flip(1);
+                    GameManager.Instance.board[curIndex[0], curIndex[1]].Flip(photonView.IsMine ? 1 : 2);
                     break;
                 case Move.Left:
                     transform.Translate(new Vector3(-1, 0, 0));
                     curIndex[1] -= 1;
-                    GameManager.Instance.board[curIndex[0], curIndex[1]].Flip(1);
+                    GameManager.Instance.board[curIndex[0], curIndex[1]].Flip(photonView.IsMine ? 1 : 2);
                     break;
                 case Move.Down:
                     transform.Translate(new Vector3(0, 0, -1));
                     curIndex[0] += 1;
-                    GameManager.Instance.board[curIndex[0], curIndex[1]].Flip(1);
+                    GameManager.Instance.board[curIndex[0], curIndex[1]].Flip(photonView.IsMine ? 1 : 2);
                     break;
                 case Move.Right:
                     transform.Translate(new Vector3(1, 0, 0));
                     curIndex[1] += 1;
-                    GameManager.Instance.board[curIndex[0], curIndex[1]].Flip(1);
+                    GameManager.Instance.board[curIndex[0], curIndex[1]].Flip(photonView.IsMine ? 1 : 2);
                     break;
             }
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(1f);
         }
         orgIndex = (int[])curIndex.Clone();
         moveCount = 0;
-        move = new Move[2];
+        moves = new Move[2];
         currentPosition = transform.position;
         isMoving = false;
-        GetComponent<PhotonTransformView>().m_SynchronizePosition = false;
+        //GetComponent<PhotonTransformView>().m_SynchronizePosition = false;
         //GameManager.Instance.isPlayersMoving = false;
     }
-    internal void SetIndex(int spawnPos)
+    public void SetIndex(int spawnPos)
     {
         photonView.RPC("SetIndexRPC", RpcTarget.AllBuffered, spawnPos);
     }
 
     [PunRPC]
-    internal void SetIndexRPC(int spawnPos)
+    public void SetIndexRPC(int spawnPos)
     {
         if(spawnPos == 0)
         {
@@ -181,6 +210,7 @@ public class Player : MonoBehaviourPun
         {
             curIndex = new int[] { 1, 1 };
         }
+        GameManager.Instance.board[curIndex[0], curIndex[1]].Flip(photonView.IsMine ? 1 : 2);
         orgIndex = (int[])curIndex.Clone();
     }
 }

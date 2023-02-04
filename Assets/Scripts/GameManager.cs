@@ -30,8 +30,8 @@ public class GameManager : MonoBehaviourPunCallbacks
 
     // <- ^ _ ->
     //[SerializeField] Text movePath;
-    [SerializeField] int boardRow = 6;
-    [SerializeField] int boardCol = 3;
+    [SerializeField] int boardRow;
+    [SerializeField] int boardCol;
     [SerializeField] GameObject tiles;
     // 실제로는 board 이용
 
@@ -45,6 +45,8 @@ public class GameManager : MonoBehaviourPunCallbacks
     // Start is called before the first frame updates
     void Start()
     {
+        boardRow = 6;
+        boardCol = 3;
         //// 부모 오브젝트 tiles를 통해서 tile을 가져와서 board에 넣어주기
         board = new Tile[boardRow, boardCol];
         for (int i = 0; i < boardRow; i++)
@@ -53,8 +55,8 @@ public class GameManager : MonoBehaviourPunCallbacks
             {
                 Transform child = tiles.transform.GetChild(i * boardCol + j);
                 board[i, j] = child.GetComponent<Tile>();
-                //Debug.Log("오브젝트 " + (i*boardCol + j));
-                //Debug.Log(board[i, j].transform.position);
+                Debug.Log("오브젝트 " + (i*boardCol + j));
+                Debug.Log(board[i, j].transform.position);
             }
         }
         SpawnPlayer();
@@ -66,7 +68,7 @@ public class GameManager : MonoBehaviourPunCallbacks
         var spawnPosition = spawnPositions[spawnPos];
         GameObject localObject = PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition.position, spawnPosition.rotation);
         localPlayer = localObject.GetComponent<Player>();
-        localPlayer.SetIndex(spawnPos);
+        //localPlayer.SetIndex(spawnPos);
     }
 
     // Update is called once per frame

@@ -6,10 +6,12 @@ public class Tile : MonoBehaviour
 {
     [SerializeField] Material[] materials;
     MeshRenderer meshRenderer;
+    Animator animator;
     // Start is called before the first frame update
     void Start()
     {
         meshRenderer= GetComponent<MeshRenderer>();
+        animator= GetComponent<Animator>();
     }
 
     // Update is called once per frame
@@ -22,5 +24,6 @@ public class Tile : MonoBehaviour
     {
         Debug.Log("Tile Fliped");
         meshRenderer.material = materials[i];
+        animator.SetTrigger("Flip");
     }
 }

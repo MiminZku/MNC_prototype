@@ -103,7 +103,7 @@ MonoBehaviour:
   orgIndex: 0000000000000000
   player1Mat: {fileID: 2100000, guid: d1ef89656f44161498bea11aad55e35a, type: 2}
   player2Mat: {fileID: 2100000, guid: 7896587f76d11464aa65aefd7bd754b5, type: 2}
-  move: 000000000000000000000000000000000000000000000000
+  moves: 
   isMoveReady: 0
   isMoving: 0
 --- !u!114 &-7145582522861395318
