@@ -15,6 +15,7 @@ public class NewPlayer : MonoBehaviourPun
     void Start()
     {
         PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable { { "isInputDone", false } });
+
     }
 
     // Update is called once per frame
@@ -43,5 +44,10 @@ public class NewPlayer : MonoBehaviourPun
     {
 
         PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable { { "isInputDone", true } });
+    }
+
+    internal void Move()
+    {
+        throw new NotImplementedException();
     }
 }

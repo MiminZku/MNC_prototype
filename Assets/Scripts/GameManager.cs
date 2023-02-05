@@ -29,22 +29,25 @@ public class GameManager : MonoBehaviourPunCallbacks
     private static GameManager instance;
 
     // <- ^ _ ->
-    //[SerializeField] Text movePath;
-    [SerializeField] int boardRow;
-    [SerializeField] int boardCol;
+    public Text diceText;
+    public Dice dice;
+
+    int boardRow;
+    int boardCol;
     [SerializeField] GameObject tiles;
     // 실제로는 board 이용
-
     public Tile[,] board;
 
     public Transform[] spawnPositions;
     public GameObject playerPrefab;
-    public bool isPlayersMoving;
     Player localPlayer;
+    private bool diceTurn;
 
     // Start is called before the first frame updates
     void Start()
     {
+        diceTurn = true;
+        //diceText.text = "Dice : " + dice.RollDice();
         boardRow = 6;
         boardCol = 3;
         //// 부모 오브젝트 tiles를 통해서 tile을 가져와서 board에 넣어주기
@@ -68,23 +71,52 @@ public class GameManager : MonoBehaviourPunCallbacks
         var spawnPosition = spawnPositions[spawnPos];
         GameObject localObject = PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition.position, spawnPosition.rotation);
         localPlayer = localObject.GetComponent<Player>();
-        //localPlayer.SetIndex(spawnPos);
     }
 
     // Update is called once per frame
     void Update()
     {
         if (PhotonNetwork.PlayerList.Length < 2) return;
-        foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
+        if (diceTurn)
         {
-            Hashtable cp = player.CustomProperties;
-            if (!(bool)cp["isMoveReady"]) return;
+            int[] diceNums = new int[2] {0, 0};
+            int i = 0;
+            GameObject[] playerObjects = GameObject.FindGameObjectsWithTag("Player");
+            if (playerObjects.Length < 2) return;
+            do
+            {
+                localPlayer.RollDice();
+                i = 0;
+                foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
+                {
+                    Hashtable cp = player.CustomProperties;
+                    if (!cp.ContainsKey("diceNum")) return;
+                    Debug.Log(string.Format("p{0} : {1}", i, (int)cp["diceNum"]));
+                    diceNums[i++] = (int)cp["diceNum"];
+                }
+            } while (diceNums[0] != diceNums[1]);
+            dice.diceNum = diceNums[0];
+            diceText.text = "Dice : " + dice.diceNum;
+            foreach(GameObject g in playerObjects)
+            {
+                g.GetComponent<Player>().SetMoveNum();
+            }
+            diceTurn = false;
         }
-        foreach(GameObject playerObject in GameObject.FindGameObjectsWithTag("Player"))
+        else
         {
-            if (playerObject.GetComponent<Player>().isMoving) return;
+            foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
+            {
+                Hashtable cp = player.CustomProperties;
+                if (!(bool)cp["isMoveReady"]) return;
+            }
+            foreach (GameObject playerObject in GameObject.FindGameObjectsWithTag("Player"))
+            {
+                if (playerObject.GetComponent<Player>().isMoving) return;
+            }
+            localPlayer.MoveBoth();
+            diceTurn = true;
         }
-        localPlayer.MoveBoth();
     }
 
     public override void OnLeftRoom() // 방 나가질 때 자동 실행(내가 나갈 경우에만)

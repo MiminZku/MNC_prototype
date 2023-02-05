@@ -6,20 +6,19 @@ using UnityEngine;
 using UnityEngine.UI;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
 
-
 public enum BattleState
 {
     Start,
     Input,
+    CheckInput,
     SetObstacle,
     Move,
     Finish
 }
 
-
 public class NewGameMgr : MonoBehaviourPunCallbacks
 {
-    Dice dice;
+    [SerializeField] Dice dice;
     int mainTurnNum = 6;
     int currentTurn = 1;
     BattleState state;
@@ -27,7 +26,8 @@ public class NewGameMgr : MonoBehaviourPunCallbacks
     NewPlayer myPlayer;
     public Transform[] spawnPositions;
     public GameObject playerPrefab;
-    private bool isProgressing = false;
+    public Text diceText;
+    public bool isProgressing = false;
 
     // Start is called before the first frame update
     void Start()
@@ -35,19 +35,17 @@ public class NewGameMgr : MonoBehaviourPunCallbacks
         state = BattleState.Start;
         SpanwPlayer();
     }
-
+    // Update is called once per frame
+    void Update()
+    {
+        GameProcess();
+    }
     private void SpanwPlayer()
     {
         var localPlayerIndex = PhotonNetwork.LocalPlayer.ActorNumber - 1;
         var spawnPosition = spawnPositions[localPlayerIndex % spawnPositions.Length];
         myPlayerObject = PhotonNetwork.Instantiate(playerPrefab.name, spawnPosition.position, spawnPosition.rotation);
         myPlayer = myPlayerObject.GetComponent<NewPlayer>();
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        GameProcess();
     }
 
     private void GameProcess()
@@ -80,22 +78,29 @@ public class NewGameMgr : MonoBehaviourPunCallbacks
                 {
                     myPlayer.InputMove();
                 }
-
+                isProgressing = false;
+                state = BattleState.CheckInput;
+                break;
+            case BattleState.CheckInput:
                 // 네트워크에 모든 플레이어가 입력이 완료 됐는지 확인
                 if (EveryPlayerReady())
                 {
                     state = BattleState.SetObstacle;
-                    isProgressing = false;
                 }
-
                 break;
             case BattleState.SetObstacle:
                 // 게임매니저의 타일들을 탐색해서 장애물 플래그가 있는 타일에 장애물 실제로 설치
+                SetObstaclesUp();
                 
                 break;
             case BattleState.Move:
                 // 이동 입력에 따라서 플레이어에서  이동
                 // 마지막 턴이면 상태 Finish로 변경
+                myPlayer.Move();
+                if(currentTurn == mainTurnNum)
+                {
+                    state = BattleState.Finish;
+                }
                 break;
             case BattleState.Finish:
                 // 승패 판정
@@ -103,13 +108,18 @@ public class NewGameMgr : MonoBehaviourPunCallbacks
         }
     }
 
+    private void SetObstaclesUp()
+    {
+        state = BattleState.Move;
+    }
+
     private bool EveryPlayerReady()
     {
         foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
         {
             Hashtable cp = player.CustomProperties;
-            Debug.Log(cp["isMoveDone"]);
-            if (!(bool)cp["isMoveDone"]) return false;
+            Debug.Log(cp["isInputDone"]);
+            if (!(bool)cp["isInputDone"]) return false;
         }
         return true;
     }

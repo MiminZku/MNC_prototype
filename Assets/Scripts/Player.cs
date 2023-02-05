@@ -1,9 +1,7 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
 using Hashtable = ExitGames.Client.Photon.Hashtable;
-using System;
 
 // ================================
 // <Player class>
@@ -38,8 +36,8 @@ public class Player : MonoBehaviourPun
 
     void Start()
     {
+        isMoveReady = false;
         PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable { { "isMoveReady", false } });
-        GetComponent<PhotonTransformView>().m_SynchronizePosition = false;
         currentPosition = gameObject.transform.position;
         meshRenderer = GetComponent<MeshRenderer>();
         if (photonView.IsMine)
@@ -50,7 +48,6 @@ public class Player : MonoBehaviourPun
         {
             meshRenderer.material = player2Mat;
         }
-        moves = new Move[2];
 
         if(currentPosition.z == 1.5)
         {
@@ -60,6 +57,16 @@ public class Player : MonoBehaviourPun
         {
             SetIndex(1);
         }
+    }
+
+    public void SetMoveNum()
+    {
+        moves = new Move[GameManager.Instance.dice.diceNum];
+        //photonView.RPC("SetMoveNumRPC", RpcTarget.All);
+    }
+    [PunRPC]
+    public void SetMoveNumRPC()
+    {
     }
 
     // Update is called once per frame
@@ -131,7 +138,9 @@ public class Player : MonoBehaviourPun
     public void ReadyToMove()
     {
         isMoveReady = true;
-        PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable { { "isMoveReady", true } });
+        Hashtable ht = PhotonNetwork.LocalPlayer.CustomProperties;
+        ht["isMoveReady"] = true;
+        PhotonNetwork.LocalPlayer.SetCustomProperties(ht);
         transform.position = currentPosition;
         curIndex = (int[])orgIndex.Clone();
 
@@ -146,23 +155,20 @@ public class Player : MonoBehaviourPun
     public void MoveBothRPC()
     {
         isMoving = true;
-        //GetComponent<PhotonTransformView>().m_SynchronizePosition = true;
         StartCoroutine("MoveDelay");
     }
 
     IEnumerator MoveDelay()
     {
-        //if (!photonView.IsMine)
-        //{
-        //    yield break;
-        //}
         isMoveReady = false;
-        PhotonNetwork.LocalPlayer.SetCustomProperties(new Hashtable { { "isMoveReady", false } });
+        Hashtable ht = PhotonNetwork.LocalPlayer.CustomProperties;
+        ht["isMoveReady"] = false;
+        PhotonNetwork.LocalPlayer.SetCustomProperties(ht);
         for (int i = 0; i < moves.Length; i++)
         {
-            if (moves[i] == Move.None) { continue; }
             switch (moves[i])
             {
+                case Move.None: break;
                 case Move.Up:
                     transform.Translate(new Vector3(0, 0, 1));
                     curIndex[0] -= 1;
@@ -188,11 +194,8 @@ public class Player : MonoBehaviourPun
         }
         orgIndex = (int[])curIndex.Clone();
         moveCount = 0;
-        moves = new Move[2];
         currentPosition = transform.position;
         isMoving = false;
-        //GetComponent<PhotonTransformView>().m_SynchronizePosition = false;
-        //GameManager.Instance.isPlayersMoving = false;
     }
     public void SetIndex(int spawnPos)
     {
@@ -212,5 +215,15 @@ public class Player : MonoBehaviourPun
         }
         GameManager.Instance.board[curIndex[0], curIndex[1]].Flip(photonView.IsMine ? 1 : 2);
         orgIndex = (int[])curIndex.Clone();
+    }
+
+    internal void RollDice()
+    {
+        if (!photonView.IsMine) return;
+        int random = Random.Range(1, 7);
+        Hashtable cp = PhotonNetwork.LocalPlayer.CustomProperties;
+        if (cp.ContainsKey("diceNum")) cp["diceNum"] = random;
+        else cp.Add("diceNum", random);
+        PhotonNetwork.LocalPlayer.SetCustomProperties(cp);
     }
 }
